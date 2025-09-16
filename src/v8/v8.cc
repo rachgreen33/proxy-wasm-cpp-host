@@ -108,7 +108,7 @@ public:
 private:
   wasm::own<wasm::Trap> trap(std::string message);
 
-  std::string getPluginFailMessage(std::string_view function_name, wasm::own<wasm::Trap> trap);
+  std::string getFailMessage(std::string_view function_name, wasm::own<wasm::Trap> trap);
 
   template <typename... Args>
   void registerHostFunctionImpl(std::string_view module_name, std::string_view function_name,
@@ -650,8 +650,7 @@ void V8::getModuleFunctionImpl(std::string_view function_name,
     }
 
     if (trap) {
-      fail(FailState::RuntimeError,
-           getPluginFailMessage(std::string(function_name), std::move(trap)));
+      fail(FailState::RuntimeError, getFailMessage(std::string(function_name), std::move(trap)));
       return;
     }
     if (log) {
@@ -703,8 +702,7 @@ void V8::getModuleFunctionImpl(std::string_view function_name,
     }
 
     if (trap) {
-      fail(FailState::RuntimeError,
-           getPluginFailMessage(std::string(function_name), std::move(trap)));
+      fail(FailState::RuntimeError, getFailMessage(std::string(function_name), std::move(trap)));
       return R{};
     }
     R rvalue = results[0].get<typename ConvertWordTypeToUint32<R>::type>();
@@ -724,8 +722,8 @@ void V8::terminate() {
 
 void V8::warm() { initStore(); }
 
-std::string V8::getPluginFailMessage(std::string_view function_name, wasm::own<wasm::Trap> trap) {
-  auto message = "Plugin Crash: Function: " + std::string(function_name) + " failed: ";
+std::string V8::getFailMessage(std::string_view function_name, wasm::own<wasm::Trap> trap) {
+  auto message = "Function: " + std::string(function_name) + " failed: ";
   message += std::string(trap->message().get(), trap->message().size());
 
   if (function_names_index_.empty()) {
@@ -756,6 +754,8 @@ std::string V8::getPluginFailMessage(std::string_view function_name, wasm::own<w
 }
 
 } // namespace v8
+
+bool initV8Engine() { return v8::engine() != nullptr; }
 
 std::unique_ptr<WasmVm> createV8Vm() { return std::make_unique<v8::V8>(); }
 
